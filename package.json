@@ -1,0 +1,74 @@
+{
+  "name": "typesafe-hypermedia",
+  "version": "0.1.0",
+  "description": "Type-safe hypermedia API framework with minimal dependencies",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
+    "typecheck": "tsc --project tsconfig.typecheck.json",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --coverageDirectory=coverage/overall",
+    "test:coverage:unit": "jest test/unit/ --coverage --coverageDirectory=coverage/unit",
+    "test:coverage:integration": "jest test/integration/ --coverage --coverageDirectory=coverage/integration",
+    "test:coverage:e2e": "jest test/e2e/ --coverage --coverageDirectory=coverage/e2e",
+    "petshop-server": "ts-node --project tsconfig.example.json examples/petshop-fastify-server.ts",
+    "hateoas-bff-server": "tsx watch --tsconfig tsconfig.example.json examples/hateoas-bff/server.ts",
+    "test-server": "ts-node --project tsconfig.example.json examples/test-fastify-server.ts",
+    "test:playwright": "npx playwright test",
+    "test:coverage:playwright": "c8 --reporter=text --reporter=text-summary --reporter=html --report-dir=coverage/playwright --include='examples/hateoas-bff/**' --exclude='examples/hateoas-bff/public/**' --exclude='examples/hateoas-bff/**/*.test.ts' --all npx playwright test",
+    "prepublishOnly": "npm run build && npm run typecheck && npm test"
+  },
+  "keywords": [
+    "hypermedia",
+    "hateoas",
+    "hal",
+    "hal-client",
+    "siren",
+    "json-api",
+    "rest",
+    "api",
+    "api-client",
+    "typescript",
+    "type-safe"
+  ],
+  "author": "Steffen Sauder",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/feffef/typesafe-hypermedia.git"
+  },
+  "homepage": "https://github.com/feffef/typesafe-hypermedia#readme",
+  "bugs": {
+    "url": "https://github.com/feffef/typesafe-hypermedia/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@hyperjump/uri-template": "^0.3.0",
+    "@sinclair/typebox": "^0.34.41"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@fastify/static": "^8.3.0",
+    "@fastify/swagger": "^9.6.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@playwright/test": "^1.59.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.10.1",
+    "c8": "^11.0.0",
+    "fastify": "^5.6.2",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

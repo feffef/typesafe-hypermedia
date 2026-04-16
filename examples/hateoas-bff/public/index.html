@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="luxury" class="bg-circuit-bg">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HATEOAS BFF Store</title>
+
+    <!-- DaisyUI + Tailwind (CDN, no build step) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Fonts — Space Mono for brand, DM Sans for body -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap">
+
+    <!-- Alpine.js app data -->
+    <script src="/js/app.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+
+    <style type="text/tailwindcss">
+        @theme {
+            --color-circuit-bg: #101114;
+            --color-circuit-surface: #1a1c22;
+            --color-circuit-raised: #22252c;
+            --color-circuit-ink: #e8eaed;
+            --color-circuit-ink2: #b0b6c2;
+            --color-circuit-muted: #8b919d;
+            --color-circuit-border: #2a2d35;
+            --color-circuit-border-h: #3d414b;
+            --color-circuit-accent: #22d3ee;
+            --color-circuit-accent-dim: rgba(34, 211, 238, 0.08);
+            --color-circuit-accent-glow: rgba(34, 211, 238, 0.18);
+            --color-circuit-accent-hover: #06b6d4;
+            --color-circuit-ok: #34d399;
+            --color-circuit-danger: #f87171;
+            --font-mono: 'Space Mono', 'SF Mono', 'Fira Code', monospace;
+            --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        /* Screen-reader-only text — visible in the accessibility tree, hidden visually */
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* DaisyUI overrides for Circuit Dark theme */
+        :root {
+            --b1: 16 17 20;       /* base-100 = circuit-bg */
+            --b2: 26 28 34;       /* base-200 = circuit-surface */
+            --b3: 34 37 44;       /* base-300 = circuit-raised */
+            --bc: 232 234 237;    /* base-content = circuit-ink */
+            --p: 34 211 238;      /* primary = circuit-accent */
+            --pc: 16 17 20;       /* primary-content = dark text on accent */
+            --s: 34 211 238;      /* secondary = accent dim */
+            --sc: 232 234 237;
+            --su: 52 211 153;     /* success = circuit-ok */
+            --er: 248 113 113;    /* error = circuit-danger */
+            --n: 42 45 53;        /* neutral = circuit-border */
+            --nc: 155 161 173;    /* neutral-content = circuit-ink2 */
+        }
+
+        [x-cloak] { display: none !important; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-circuit-bg);
+            color: var(--color-circuit-ink);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Dot-grid background */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: -1;
+            opacity: 0.25;
+            background-image: radial-gradient(circle, var(--color-circuit-border) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* Nav button base styling */
+        .nav-btn {
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.95rem;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--color-circuit-muted);
+            padding: 0 1rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .nav-btn:hover {
+            background: var(--color-circuit-raised);
+            color: var(--color-circuit-ink);
+        }
+        .nav-btn-active {
+            background: var(--color-circuit-accent);
+            border-color: var(--color-circuit-accent);
+            color: var(--color-circuit-bg);
+            font-weight: 600;
+            box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+        }
+        .nav-btn-active:hover {
+            background: var(--color-circuit-accent-hover);
+            color: var(--color-circuit-bg);
+        }
+        .nav-btn-secondary {
+            background: var(--color-circuit-accent-dim);
+            color: var(--color-circuit-accent);
+        }
+
+        /* Card action button */
+        .card-action-btn {
+            font-family: var(--font-mono);
+            font-weight: 400;
+            font-size: 0.72rem;
+            color: var(--color-circuit-accent);
+            background: var(--color-circuit-accent-dim);
+            border: 1px solid var(--color-circuit-accent-glow);
+            border-radius: 6px;
+            padding: 0.4rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .card-action-btn:hover {
+            background: var(--color-circuit-accent);
+            border-color: var(--color-circuit-accent);
+            color: var(--color-circuit-bg);
+        }
+        .card-action-btn-success {
+            color: var(--color-circuit-ok);
+            border-color: rgba(52, 211, 153, 0.18);
+            background: rgba(52, 211, 153, 0.08);
+        }
+        .card-action-btn-success:hover {
+            background: var(--color-circuit-ok);
+            border-color: var(--color-circuit-ok);
+            color: var(--color-circuit-bg);
+        }
+        .card-action-btn-danger {
+            color: var(--color-circuit-danger);
+            border-color: rgba(248, 113, 113, 0.18);
+            background: rgba(248, 113, 113, 0.08);
+        }
+        .card-action-btn-danger:hover {
+            background: var(--color-circuit-danger);
+            border-color: var(--color-circuit-danger);
+            color: var(--color-circuit-bg);
+        }
+
+        /* Wishlist icon button */
+        .wishlist-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            color: var(--color-circuit-muted);
+            transition: color 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+        .wishlist-btn:hover { color: var(--color-circuit-accent); }
+
+        /* Product card */
+        .product-card {
+            background: var(--color-circuit-surface);
+            border: 1px solid var(--color-circuit-border);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            transition: all 0.15s ease;
+            animation: revealCard 0.25s ease-out backwards;
+        }
+        .product-card:hover {
+            border-color: var(--color-circuit-accent);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.35), 0 0 0 1px var(--color-circuit-accent-glow);
+            transform: translateY(-2px);
+        }
+        .product-card-header {
+            border-top: 3px solid var(--color-circuit-accent);
+            padding: 1.25rem 1.25rem 0.5rem;
+        }
+        .product-card-body { padding: 0.75rem 1.25rem 0; }
+        .product-card-footer { padding: 0.5rem 1.25rem 1.25rem; }
+
+        /* Stagger card animations */
+        .product-card:nth-child(1) { animation-delay: 0.02s; }
+        .product-card:nth-child(2) { animation-delay: 0.04s; }
+        .product-card:nth-child(3) { animation-delay: 0.06s; }
+        .product-card:nth-child(4) { animation-delay: 0.08s; }
+        .product-card:nth-child(5) { animation-delay: 0.10s; }
+        .product-card:nth-child(6) { animation-delay: 0.12s; }
+        .product-card:nth-child(7) { animation-delay: 0.14s; }
+        .product-card:nth-child(8) { animation-delay: 0.16s; }
+
+        /* Primary CTA */
+        .cta-btn {
+            font-family: var(--font-sans);
+            font-weight: 600;
+            font-size: 0.85rem;
+            background: var(--color-circuit-accent);
+            border: 1px solid var(--color-circuit-accent);
+            color: var(--color-circuit-bg);
+            border-radius: 6px;
+            padding: 0 1.75rem;
+            height: 42px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 14px rgba(34, 211, 238, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .cta-btn:hover {
+            background: var(--color-circuit-accent-hover);
+            border-color: var(--color-circuit-accent-hover);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.35);
+        }
+        .cta-btn-lg {
+            font-size: 1rem;
+            height: 48px;
+            padding: 0 2.5rem;
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+        .cta-btn-default {
+            background: transparent;
+            border-color: var(--color-circuit-border);
+            color: var(--color-circuit-ink2);
+            box-shadow: none;
+        }
+        .cta-btn-default:hover {
+            border-color: var(--color-circuit-accent);
+            color: var(--color-circuit-ink);
+            box-shadow: none;
+        }
+
+        /* CSS-only icons — zero a11y tree footprint */
+        .icon {
+            display: inline-block;
+            background: currentColor;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+        }
+        .icon-star { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z'/%3E%3C/svg%3E"); }
+        .icon-search { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E"); }
+        .icon-heart-fill { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z'/%3E%3C/svg%3E"); }
+        .icon-heart { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z'/%3E%3C/svg%3E"); }
+        .icon-cart { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E"); }
+        .icon-cart-fill { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.5A.5.5 0 0 1 .5 1h1a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M0 1.5A.5.5 0 0 1 .5 1h1a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z'/%3E%3C/svg%3E"); }
+        .icon-tag { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 1a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l4.586-4.586a1 1 0 0 0 0-1.414l-7-7A1 1 0 0 0 6.586 1H2zm4 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 1a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l4.586-4.586a1 1 0 0 0 0-1.414l-7-7A1 1 0 0 0 6.586 1H2zm4 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z'/%3E%3C/svg%3E"); }
+        .icon-error { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/%3E%3C/svg%3E"); }
+        .icon-check-circle { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z'/%3E%3C/svg%3E"); }
+        .icon-image { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z'/%3E%3Cpath d='M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z'/%3E%3Cpath d='M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z'/%3E%3C/svg%3E"); }
+        .icon-bag { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5z'/%3E%3C/svg%3E"); }
+        .icon-cart-plus { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9 5.5a.5.5 0 0 0-1 0V7H6.5a.5.5 0 0 0 0 1H8v1.5a.5.5 0 0 0 1 0V8h1.5a.5.5 0 0 0 0-1H9V5.5z'/%3E%3Cpath d='M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9 5.5a.5.5 0 0 0-1 0V7H6.5a.5.5 0 0 0 0 1H8v1.5a.5.5 0 0 0 1 0V8h1.5a.5.5 0 0 0 0-1H9V5.5z'/%3E%3Cpath d='M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/%3E%3C/svg%3E"); }
+
+        /* Respect reduced-motion preference — disables opacity transitions that
+           confuse automated contrast checkers (axe-core) and benefit users who
+           are sensitive to animation. */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Animations */
+        @keyframes revealCard {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes revealUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes revealScale {
+            from { opacity: 0; transform: scale(0.99); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="max-w-[1100px] mx-auto px-7" x-data="app" x-cloak>
+        <header class="pt-7 mb-10">
+            <div class="flex items-center justify-between mb-5" role="none">
+                <p class="font-mono text-2xl font-bold text-circuit-ink leading-none tracking-tight m-0"><span class="text-circuit-accent">//</span> hypermedia.store</p>
+                <div class="flex items-center gap-5" role="none">
+                    <template x-if="state.chrome?.user">
+                        <span class="text-sm text-circuit-ink2" data-test="greeting">
+                            Hello, <strong class="text-circuit-ink" x-text="state.chrome.user.name"></strong>
+                            <span role="status" class="inline-flex items-center gap-1 ml-2 px-2.5 py-0.5 bg-circuit-accent-dim border border-circuit-accent-glow rounded-full font-mono text-xs text-circuit-accent" data-test="loyalty"
+                                :aria-label="state.chrome.user.loyaltyPoints + ' loyalty points'">
+                                <span aria-hidden="true"><span class="icon icon-star w-3 h-3"></span>
+                                <span x-text="state.chrome.user.loyaltyPoints"></span> pts</span>
+                            </span>
+                        </span>
+                    </template>
+                    <span class="font-mono text-[0.68rem] tracking-widest uppercase bg-circuit-accent-dim px-3 py-1 rounded border border-circuit-accent-glow text-circuit-accent" aria-hidden="true">HATEOAS &middot; BFF</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex flex-wrap gap-1.5 items-center p-2.5 px-5 bg-circuit-surface rounded-xl border border-circuit-border" aria-label="Main navigation" data-test="nav">
+                <!-- Home -->
+                <template x-if="state.nav?.home">
+                    <button class="nav-btn"
+                        :class="state.nav.home.selected ? 'nav-btn-active' : ''"
+                        :aria-current="state.nav.home.selected ? 'page' : false"
+                        @click="updateStateFrom(state.nav.home.href)"
+                        x-text="state.nav.home.title">
+                    </button>
+                </template>
+
+                <!-- Categories -->
+                <template x-for="cat in state.nav?.categories || []" :key="cat.href">
+                    <button class="nav-btn"
+                        :class="cat.selected ? 'nav-btn-active' : ''"
+                        :aria-current="cat.selected ? 'page' : false"
+                        @click="updateStateFrom(cat.href)"
+                        x-text="cat.title">
+                    </button>
+                </template>
+
+                <!-- Separator before search -->
+                <div class="w-px h-[18px] bg-circuit-border mx-2" role="separator" aria-hidden="true"></div>
+
+                <!-- Search -->
+                <search class="flex-1 min-w-[140px] max-w-[250px]" data-test="search">
+                    <label class="relative flex items-center">
+                        <span class="icon icon-search absolute left-2.5 w-4 h-4 text-circuit-muted pointer-events-none" aria-hidden="true"></span>
+                        <input type="text" placeholder="Search products..."
+                            class="w-full h-9 pl-8 pr-3 bg-circuit-raised border border-circuit-border rounded-md text-sm text-circuit-ink placeholder:text-circuit-muted focus:border-circuit-accent focus:outline-none focus:ring-2 focus:ring-circuit-accent-glow transition"
+                            @keydown.enter="if ($event.target.value) updateStateFrom(state.nav.search.href + (state.nav.search.href.includes('?') ? '&' : '?') + 'search=' + encodeURIComponent($event.target.value))"
+                            @input="if (!$event.target.value) updateStateFrom(state.nav.home.href)">
+                    </label>
+                </search>
+
+                <!-- Separator before cart -->
+                <div class="w-px h-[18px] bg-circuit-border mx-2" role="separator" aria-hidden="true"></div>
+
+                <!-- Wishlist -->
+                <template x-if="state.nav?.wishlist">
+                    <button class="nav-btn relative" data-test="nav-wishlist"
+                        :class="state.nav.wishlist.selected ? 'nav-btn-active' : ''"
+                        :aria-current="state.nav.wishlist.selected ? 'page' : false"
+                        :aria-label="'Show wishlist with ' + state.nav.wishlist.count + (state.nav.wishlist.count === 1 ? ' item' : ' items')"
+                        @click="updateStateFrom(state.nav.wishlist.href)">
+                        <span class="icon icon-heart-fill w-4 h-4" role="none"></span>
+                        <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-circuit-accent text-circuit-bg text-[10px] font-bold flex items-center justify-center leading-none px-1"
+                            x-show="state.nav.wishlist.count > 0" x-text="state.nav.wishlist.count" role="none"></span>
+                    </button>
+                </template>
+
+                <!-- Cart -->
+                <template x-if="state.nav?.cart">
+                    <button class="nav-btn relative" data-test="nav-cart"
+                        :class="state.nav?.cart.selected ? 'nav-btn-active' : state.nav.cart.count > 0 ? 'nav-btn-secondary' : ''"
+                        :aria-current="state.nav?.cart.selected ? 'page' : false"
+                        :aria-label="'Show cart with ' + state.nav.cart.count + (state.nav.cart.count === 1 ? ' item' : ' items')"
+                        @click="updateStateFrom(state.nav.cart.href)">
+                        <span class="icon icon-cart w-4 h-4" role="none"></span>
+                        <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-circuit-accent text-circuit-bg text-[10px] font-bold flex items-center justify-center leading-none px-1"
+                            x-show="state.nav.cart.count > 0" x-text="state.nav.cart.count" role="none"></span>
+                    </button>
+                </template>
+
+                <!-- Orders -->
+                <template x-if="state.nav?.orders">
+                    <button class="nav-btn"
+                        :class="state.nav.orders.selected ? 'nav-btn-active' : ''"
+                        :aria-current="state.nav.orders.selected ? 'page' : false"
+                        @click="updateStateFrom(state.nav.orders.href)"
+                        x-text="state.nav.orders.title">
+                    </button>
+                </template>
+            </nav>
+        </header>
+
+        <!-- Welcome heading on the home view (occupies the breadcrumb slot) -->
+        <template x-if="state.nav?.home?.selected">
+            <h1 class="font-mono text-sm uppercase tracking-widest text-circuit-muted py-3 mb-3 m-0" data-test="welcome-heading">Welcome to <span class="text-circuit-accent">hypermedia.store</span></h1>
+        </template>
+
+        <!-- Breadcrumbs from server state -->
+        <template x-if="state.chrome?.breadcrumbs?.length">
+            <nav class="flex items-center flex-wrap gap-2 py-3 mb-3 font-mono text-xs text-circuit-muted" data-test="breadcrumbs" aria-label="Breadcrumb">
+                <ol class="flex items-center flex-wrap gap-2 list-none m-0 p-0">
+                    <template x-for="(crumb, i) in state.chrome.breadcrumbs" :key="i">
+                        <li class="inline-flex items-center gap-2">
+                            <template x-if="crumb.href">
+                                <a href="#" class="text-circuit-ink2 no-underline hover:text-circuit-accent transition-colors" @click.prevent="updateStateFrom(crumb.href)"
+                                    x-text="crumb.title"></a>
+                            </template>
+                            <template x-if="!crumb.href">
+                                <span class="text-circuit-accent font-bold" aria-current="page" x-text="crumb.title"></span>
+                            </template>
+                            <template x-if="i < state.chrome.breadcrumbs.length - 1">
+                                <span class="text-circuit-border-h select-none" aria-hidden="true">/</span>
+                            </template>
+                        </li>
+                    </template>
+                </ol>
+            </nav>
+        </template>
+
+        <!-- Promo banner from CRM -->
+        <template x-if="state.chrome?.promo">
+            <div class="flex items-center gap-3 px-5 py-3 bg-circuit-accent-dim border border-circuit-accent-glow rounded-md mb-7 text-sm text-circuit-accent animate-[fadeIn_0.3s_ease-out]" role="status" aria-label="Promotional offer" data-test="promo">
+                <span class="icon icon-tag w-4 h-4 shrink-0" aria-hidden="true"></span>
+                <p class="m-0" x-text="state.chrome.promo.description"></p>
+                <code class="font-mono font-bold bg-circuit-raised px-2 py-0.5 rounded border border-circuit-border text-circuit-ink text-[0.85em] tracking-wide" x-text="state.chrome.promo.code" data-test="promo-code"></code>
+            </div>
+        </template>
+
+        <div id="content-area" class="relative min-h-[300px]" role="none">
+            <!-- Loading Overlay -->
+            <div x-show="isLoading" class="fixed top-5 right-5 z-[1000] bg-circuit-surface rounded-full w-10 h-10 flex items-center justify-center shadow-lg border border-circuit-border">
+                <span class="loading loading-spinner loading-sm text-circuit-accent"></span>
+            </div>
+
+            <!-- Toast notification from server state -->
+            <template x-if="state.chrome?.toast">
+                <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[1001] min-w-[300px] max-w-[500px] animate-[slideDown_0.3s_ease-out]" data-test="toast" x-data="{ visible: true }" x-show="visible"
+                    x-init="setTimeout(() => visible = false, 4000)"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2">
+                    <div class="flex items-start gap-3 p-4 bg-circuit-surface border rounded-lg shadow-lg"
+                        :class="state.chrome.toast.variant === 'danger' ? 'border-circuit-danger shadow-[0_0_20px_rgba(248,113,113,0.18)]' : 'border-circuit-accent shadow-[0_0_20px_var(--color-circuit-accent-glow)]'"
+                        role="alert">
+                        <template x-if="state.chrome.toast.variant === 'danger'">
+                            <span class="icon icon-error w-5 h-5 text-circuit-danger shrink-0 mt-0.5" aria-hidden="true"></span>
+                        </template>
+                        <template x-if="state.chrome.toast.variant !== 'danger'">
+                            <span class="icon icon-check-circle w-5 h-5 text-circuit-ok shrink-0 mt-0.5" aria-hidden="true"></span>
+                        </template>
+                        <div>
+                            <strong x-text="state.chrome.toast.title"></strong>
+                            <span class="text-circuit-ink2 ml-1" x-text="state.chrome.toast.message"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Error -->
+            <div x-show="error" class="py-4" data-test="error">
+                <div class="flex items-start gap-3 p-4 bg-circuit-surface border border-circuit-danger rounded-lg" role="alert">
+                    <span class="icon icon-error w-5 h-5 text-circuit-danger shrink-0 mt-0.5" aria-hidden="true"></span>
+                    <strong x-text="error"></strong>
+                </div>
+            </div>
+
+            <!-- Order Confirmation View -->
+            <template x-if="state.view?.confirmation">
+                <section class="bg-circuit-surface p-10 rounded-2xl border border-circuit-border shadow-lg text-center animate-[revealScale_0.3s_ease-out]" data-test="confirmation" aria-label="Order confirmation">
+                    <span class="icon icon-check-circle w-12 h-12 text-circuit-ok mx-auto mb-5" aria-hidden="true"></span>
+                    <h1 class="text-3xl font-bold mb-3">Order Confirmed</h1>
+                    <p class="text-circuit-ink2 text-sm mb-7" data-test="confirmation-id">Order <code class="font-mono bg-circuit-raised px-2 py-0.5 rounded border border-circuit-border text-circuit-accent" x-text="state.view.confirmation.summary.orderId"></code></p>
+                    <div class="flex justify-center gap-10 mb-7" role="none">
+                        <div class="flex flex-col items-center gap-2" role="group" aria-label="Items">
+                            <span class="text-xs uppercase tracking-widest text-circuit-muted font-mono" aria-hidden="true">Items</span>
+                            <span class="text-2xl font-bold font-mono" x-text="state.view.confirmation.summary.itemCount"></span>
+                        </div>
+                        <div class="flex flex-col items-center gap-2" role="group" aria-label="Total">
+                            <span class="text-xs uppercase tracking-widest text-circuit-muted font-mono" aria-hidden="true">Total</span>
+                            <span class="text-2xl font-bold font-mono" x-text="'$' + state.view.confirmation.summary.total.toFixed(2)"></span>
+                        </div>
+                    </div>
+                    <nav class="flex gap-3 justify-center flex-wrap" data-test="confirmation-actions" aria-label="Next steps">
+                        <button class="cta-btn" @click="updateStateFrom(state.nav.home.href)">
+                            Continue Shopping
+                        </button>
+                        <template x-if="state.view.confirmation.viewOrders">
+                            <button class="cta-btn cta-btn-default" @click="updateStateFrom(state.view.confirmation.viewOrders.href)"
+                                x-text="state.view.confirmation.viewOrders.title">
+                            </button>
+                        </template>
+                    </nav>
+                </section>
+            </template>
+
+            <!-- Product Detail View -->
+            <template x-if="state.view?.detail">
+                <section class="bg-circuit-surface p-7 rounded-2xl border border-circuit-border shadow-lg animate-[revealScale_0.25s_ease-out] relative overflow-hidden" data-test="detail" aria-label="Product details">
+                    <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-circuit-accent via-circuit-accent-hover to-transparent" aria-hidden="true"></div>
+
+                    <h1 class="text-3xl font-bold tracking-tight mb-3" x-text="state.view.detail.productDetails.name"></h1>
+
+                    <div class="flex items-center gap-5 mb-2" data-test="detail-meta" role="none">
+                        <output class="badge font-mono text-[0.7rem] tracking-wide uppercase" data-test="detail-badge"
+                            :class="state.view.detail.productDetails.isAvailable ? 'badge-success' : 'badge-error'"
+                            x-text="state.view.detail.productDetails.stockStatus"></output>
+                        <template x-if="state.view.detail.productDetails.price">
+                            <strong class="font-mono text-2xl font-bold text-circuit-accent tracking-tight" data-test="detail-price"
+                                x-text="'$' + state.view.detail.productDetails.price.toFixed(2)"></strong>
+                        </template>
+                    </div>
+
+                    <!-- Product images from DAM -->
+                    <template x-if="state.view.detail.productDetails.images?.length">
+                        <div class="flex gap-3 my-5 overflow-x-auto" data-test="image-gallery" role="group" aria-label="Product images">
+                            <template x-for="(img, i) in state.view.detail.productDetails.images" :key="i">
+                                <div class="shrink-0 w-[140px] h-[100px] bg-circuit-raised border border-dashed border-circuit-border rounded-md flex flex-col items-center justify-center gap-2 text-circuit-muted text-[0.7rem] font-mono hover:border-circuit-accent hover:text-circuit-accent transition-colors" data-test="image-placeholder"
+                                    role="img" :aria-label="state.view.detail.productDetails.name + ' — image ' + (i + 1)">
+                                    <span class="icon icon-image w-6 h-6" aria-hidden="true"></span>
+                                    <span aria-hidden="true" x-text="img.split('/').pop()"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <p class="text-sm leading-relaxed text-circuit-ink2 my-5 max-w-[60ch]" x-text="state.view.detail.productDetails.description"></p>
+
+                    <!-- Add to Cart -->
+                    <template x-if="state.view.detail.productDetails.addToCart">
+                        <button class="cta-btn" @click="updateStateFrom(state.view.detail.productDetails.addToCart.href)"
+                            x-text="state.view.detail.productDetails.addToCart.title">
+                        </button>
+                    </template>
+                    <template x-if="!state.view.detail.productDetails.addToCart">
+                        <div class="text-sm text-circuit-muted italic py-2">(Item not available for purchase)</div>
+                    </template>
+
+                    <hr class="border-0 h-px bg-circuit-border my-7">
+
+                    <h2 class="font-bold text-base mb-5">Reviews</h2>
+                    <ul class="flex flex-col gap-3 list-none m-0 p-0">
+                        <template x-for="review in state.view.detail.productDetails.reviews || []" :key="review.author">
+                            <li class="bg-circuit-raised p-5 rounded-md border border-circuit-border hover:border-circuit-border-h transition-colors" data-test="review">
+                                <div class="flex items-center gap-3 mb-2 text-sm" role="none">
+                                    <strong class="text-[#fbbf24] tracking-wide" x-text="'★'.repeat(review.rating)"></strong>
+                                    <cite class="font-semibold text-circuit-ink text-sm not-italic" x-text="review.author"></cite>
+                                </div>
+                                <p class="m-0 text-circuit-ink2 leading-relaxed text-sm" x-text="review.text"></p>
+                            </li>
+                        </template>
+                    </ul>
+                    <p x-show="!state.view.detail.productDetails.reviews || state.view.detail.productDetails.reviews.length === 0"
+                        class="text-circuit-muted italic text-center p-7 bg-circuit-raised rounded-md border border-dashed border-circuit-border text-sm" data-test="no-reviews">
+                        No reviews yet.
+                    </p>
+
+                    <!-- Related Products -->
+                    <template x-if="state.view.detail.recommendations">
+                        <section class="mt-10 pt-7 border-t border-dashed border-circuit-border" data-test="recommendations">
+                            <h2 class="font-mono text-sm uppercase tracking-widest text-circuit-muted mb-5" x-text="state.view.detail.recommendations.heading"></h2>
+                            <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 animate-[revealUp_0.3s_ease-out_backwards] list-none m-0 p-0">
+                                <template x-for="(card, index) in state.view.detail.recommendations.cards || []" :key="index + '-' + card.title">
+                                    <li class="product-card" data-test="card">
+                                        <div class="product-card-header" role="none">
+                                            <div class="flex items-start justify-between gap-2" role="none">
+                                                <h3 class="text-base font-semibold leading-snug flex-1 m-0" x-text="card.title"></h3>
+                                                <template x-if="card.badge">
+                                                    <span class="badge badge-sm font-mono text-[0.6rem] tracking-wide uppercase" data-test="badge"
+                                                        :class="'badge-' + card.badge.variant"
+                                                        x-text="card.badge.text"></span>
+                                                </template>
+                                            </div>
+                                            <strong class="font-mono text-lg font-bold text-circuit-accent block mt-2" x-show="card.subtitle" x-text="card.subtitle" data-test="card-price"></strong>
+                                        </div>
+                                        <div class="product-card-body" role="none">
+                                            <p class="text-xs leading-relaxed text-circuit-ink2 m-0" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
+                                        </div>
+                                        <div class="product-card-footer flex gap-3 flex-wrap" role="none">
+                                            <template x-if="card.href">
+                                                <button class="card-action-btn" @click="updateStateFrom(card.href)">
+                                                    View Details
+                                                </button>
+                                            </template>
+                                            <template x-if="card.actions?.wishlistToggle">
+                                                <button class="wishlist-btn" data-test="wishlist-toggle"
+                                                    :aria-label="card.actions.wishlistToggle.inWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
+                                                    @click="updateStateFrom(card.actions.wishlistToggle.href)">
+                                                    <template x-if="card.actions.wishlistToggle.inWishlist">
+                                                        <span class="icon icon-heart-fill w-4 h-4 text-circuit-accent" aria-hidden="true"></span>
+                                                    </template>
+                                                    <template x-if="!card.actions.wishlistToggle.inWishlist">
+                                                        <span class="icon icon-heart w-4 h-4" aria-hidden="true"></span>
+                                                    </template>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </section>
+                    </template>
+                </section>
+            </template>
+
+            <!-- Listing View (home / category / search / wishlist / orders) -->
+            <template x-if="state.view?.listing">
+                <section :aria-label="state.view.listing.products.heading">
+                    <template x-if="state.nav?.home?.selected">
+                        <h2 class="text-xl font-bold mb-7 tracking-tight flex items-center gap-3 before:content-[''] before:w-1 before:h-[1.15em] before:bg-circuit-accent before:rounded-sm before:shrink-0" x-text="state.view.listing.products.heading" data-test="heading"></h2>
+                    </template>
+                    <template x-if="!state.nav?.home?.selected">
+                        <h1 class="text-xl font-bold mb-7 tracking-tight flex items-center gap-3 before:content-[''] before:w-1 before:h-[1.15em] before:bg-circuit-accent before:rounded-sm before:shrink-0" x-text="state.view.listing.products.heading" data-test="heading"></h1>
+                    </template>
+                    <div class="flex items-center gap-3 mb-5 flex-wrap" data-test="sort" role="toolbar" aria-label="Sort options" x-show="state.view.listing.sortOptions?.length">
+                        <span class="font-mono text-xs uppercase tracking-widest text-circuit-muted">Sort by</span>
+                        <template x-for="opt in (state.view.listing.sortOptions || [])" :key="opt.href">
+                            <button class="nav-btn text-sm !h-8 !px-3"
+                                :class="opt.selected ? 'nav-btn-active' : ''"
+                                :aria-pressed="opt.selected ? 'true' : 'false'"
+                                @click="updateStateFrom(opt.href)"
+                                x-text="opt.title">
+                            </button>
+                        </template>
+                    </div>
+                    <template x-if="state.view.listing.products.cards?.length === 0">
+                        <section class="text-center p-10 text-circuit-muted bg-circuit-surface rounded-xl border border-dashed border-circuit-border" data-test="empty" aria-label="Empty">
+                            <span class="icon icon-bag w-8 h-8 mx-auto mb-3 text-circuit-muted" aria-hidden="true"></span>
+                            <p class="mb-5 text-sm">No items here yet.</p>
+                            <button class="cta-btn text-sm !h-9" @click="updateStateFrom(state.nav.home.href)">
+                                Browse Products
+                            </button>
+                        </section>
+                    </template>
+                    <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 animate-[revealUp_0.3s_ease-out_backwards] list-none m-0 p-0" x-show="state.view.listing.products.cards?.length > 0">
+                        <template x-for="(card, index) in state.view.listing.products.cards || []" :key="index + '-' + card.title">
+                            <li class="product-card" data-test="card">
+                                <div class="product-card-header" role="none">
+                                    <div class="flex items-start justify-between gap-2" role="none">
+                                        <template x-if="state.nav?.home?.selected">
+                                            <h3 class="text-base font-semibold leading-snug flex-1 m-0" x-text="card.title"></h3>
+                                        </template>
+                                        <template x-if="!state.nav?.home?.selected">
+                                            <h2 class="text-base font-semibold leading-snug flex-1 m-0" x-text="card.title"></h2>
+                                        </template>
+                                        <template x-if="card.badge">
+                                            <span class="badge badge-sm font-mono text-[0.6rem] tracking-wide uppercase" data-test="badge"
+                                                :class="'badge-' + card.badge.variant"
+                                                x-text="card.badge.text"></span>
+                                        </template>
+                                    </div>
+                                    <strong class="font-mono text-lg font-bold text-circuit-accent block mt-2" x-show="card.subtitle" x-text="card.subtitle" data-test="card-price"></strong>
+                                </div>
+                                <div class="product-card-body" role="none">
+                                    <p class="text-xs leading-relaxed text-circuit-ink2 m-0" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
+                                </div>
+                                <div class="product-card-footer flex gap-3 flex-wrap" role="none">
+                                    <template x-if="card.href">
+                                        <button class="card-action-btn" @click="updateStateFrom(card.href)">
+                                            View Details
+                                        </button>
+                                    </template>
+                                    <template x-if="card.actions?.addToCart">
+                                        <button class="card-action-btn card-action-btn-success"
+                                            :aria-label="card.actions.addToCart.title"
+                                            @click="updateStateFrom(card.actions.addToCart.href)">
+                                            <span aria-hidden="true"><span class="icon icon-cart-plus w-3.5 h-3.5"></span>
+                                            <span x-text="card.actions.addToCart.title"></span></span>
+                                        </button>
+                                    </template>
+                                    <template x-if="card.actions?.wishlistToggle">
+                                        <button class="wishlist-btn" data-test="wishlist-toggle"
+                                            :aria-label="card.actions.wishlistToggle.inWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
+                                            @click="updateStateFrom(card.actions.wishlistToggle.href)">
+                                            <template x-if="card.actions.wishlistToggle.inWishlist">
+                                                <span class="icon icon-heart-fill w-4 h-4 text-circuit-accent" aria-hidden="true"></span>
+                                            </template>
+                                            <template x-if="!card.actions.wishlistToggle.inWishlist">
+                                                <span class="icon icon-heart w-4 h-4" aria-hidden="true"></span>
+                                            </template>
+                                        </button>
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </section>
+            </template>
+
+            <!-- Cart View -->
+            <template x-if="state.view?.cart">
+                <section :aria-label="state.view.cart.products.heading">
+                    <h1 class="text-xl font-bold mb-7 tracking-tight flex items-center gap-3 before:content-[''] before:w-1 before:h-[1.15em] before:bg-circuit-accent before:rounded-sm before:shrink-0" x-text="state.view.cart.products.heading" data-test="heading"></h1>
+                    <template x-if="state.view.cart.products.cards?.length === 0">
+                        <section class="text-center p-10 text-circuit-muted bg-circuit-surface rounded-xl border border-dashed border-circuit-border" data-test="empty" aria-label="Empty">
+                            <span class="icon icon-bag w-8 h-8 mx-auto mb-3 text-circuit-muted" aria-hidden="true"></span>
+                            <p class="mb-5 text-sm">No items here yet.</p>
+                            <button class="cta-btn text-sm !h-9" @click="updateStateFrom(state.nav.home.href)">
+                                Browse Products
+                            </button>
+                        </section>
+                    </template>
+                    <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 animate-[revealUp_0.3s_ease-out_backwards] list-none m-0 p-0" x-show="state.view.cart.products.cards?.length > 0">
+                        <template x-for="(card, index) in state.view.cart.products.cards || []" :key="index + '-' + card.title">
+                            <li class="product-card" data-test="card">
+                                <div class="product-card-header" role="none">
+                                    <div class="flex items-start justify-between gap-2" role="none">
+                                        <h2 class="text-base font-semibold leading-snug flex-1 m-0" x-text="card.title"></h2>
+                                        <template x-if="card.badge">
+                                            <span class="badge badge-sm font-mono text-[0.6rem] tracking-wide uppercase" data-test="badge"
+                                                :class="'badge-' + card.badge.variant"
+                                                x-text="card.badge.text"></span>
+                                        </template>
+                                    </div>
+                                    <strong class="font-mono text-lg font-bold text-circuit-accent block mt-2" x-show="card.subtitle" x-text="card.subtitle" data-test="card-price"></strong>
+                                </div>
+                                <div class="product-card-body" role="none">
+                                    <p class="text-xs leading-relaxed text-circuit-ink2 m-0" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
+                                </div>
+                                <div class="product-card-footer flex gap-3 flex-wrap" role="none">
+                                    <template x-if="card.href">
+                                        <button class="card-action-btn" @click="updateStateFrom(card.href)">
+                                            View Details
+                                        </button>
+                                    </template>
+                                    <template x-if="card.actions?.wishlistToggle">
+                                        <button class="wishlist-btn" data-test="wishlist-toggle"
+                                            :aria-label="card.actions.wishlistToggle.inWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
+                                            @click="updateStateFrom(card.actions.wishlistToggle.href)">
+                                            <template x-if="card.actions.wishlistToggle.inWishlist">
+                                                <span class="icon icon-heart-fill w-4 h-4 text-circuit-accent" aria-hidden="true"></span>
+                                            </template>
+                                            <template x-if="!card.actions.wishlistToggle.inWishlist">
+                                                <span class="icon icon-heart w-4 h-4" aria-hidden="true"></span>
+                                            </template>
+                                        </button>
+                                    </template>
+                                    <template x-if="card.actions?.moveToWishlist">
+                                        <button class="card-action-btn"
+                                            :aria-label="card.actions.moveToWishlist.title"
+                                            @click="updateStateFrom(card.actions.moveToWishlist.href)">
+                                            <span aria-hidden="true"><span class="icon icon-heart-fill w-3.5 h-3.5"></span>
+                                            <span x-text="card.actions.moveToWishlist.title"></span></span>
+                                        </button>
+                                    </template>
+                                    <template x-if="card.actions?.removeFromCart">
+                                        <button class="card-action-btn card-action-btn-danger"
+                                            @click="updateStateFrom(card.actions.removeFromCart.href)"
+                                            x-text="card.actions.removeFromCart.title">
+                                        </button>
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+
+                    <!-- "You might also like" recommendations -->
+                    <template x-if="state.view.cart.recommendations">
+                        <section class="mt-10 pt-7 border-t border-dashed border-circuit-border" data-test="recommendations">
+                            <h2 class="font-mono text-sm uppercase tracking-widest text-circuit-muted mb-5" x-text="state.view.cart.recommendations.heading"></h2>
+                            <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5 list-none m-0 p-0">
+                                <template x-for="(card, index) in state.view.cart.recommendations.cards || []" :key="index + '-' + card.title">
+                                    <li class="product-card" data-test="card">
+                                        <div class="product-card-header" role="none">
+                                            <div class="flex items-start justify-between gap-2" role="none">
+                                                <h3 class="text-base font-semibold leading-snug flex-1 m-0" x-text="card.title"></h3>
+                                                <template x-if="card.badge">
+                                                    <span class="badge badge-sm font-mono text-[0.6rem] tracking-wide uppercase" data-test="badge"
+                                                        :class="'badge-' + card.badge.variant"
+                                                        x-text="card.badge.text"></span>
+                                                </template>
+                                            </div>
+                                            <strong class="font-mono text-lg font-bold text-circuit-accent block mt-2" x-show="card.subtitle" x-text="card.subtitle" data-test="card-price"></strong>
+                                        </div>
+                                        <div class="product-card-body" role="none">
+                                            <p class="text-xs leading-relaxed text-circuit-ink2 m-0" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
+                                        </div>
+                                        <div class="product-card-footer" role="none">
+                                            <template x-if="card.href">
+                                                <button class="card-action-btn" @click="updateStateFrom(card.href)">
+                                                    View Details
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </section>
+                    </template>
+
+                    <!-- Cart Summary -->
+                    <template x-if="state.view.cart.cartSummary">
+                        <div class="mt-7 mb-5 p-5 bg-circuit-surface border border-circuit-border rounded-xl font-mono text-sm max-w-[420px] ml-auto" data-test="cart-summary">
+                            <dl>
+                                <div class="flex justify-between py-1 text-circuit-ink2">
+                                    <dt>Subtotal</dt>
+                                    <dd x-text="'$' + state.view.cart.cartSummary.subtotal.toFixed(2)"></dd>
+                                </div>
+                                <template x-if="state.view.cart.cartSummary.discount">
+                                    <div class="flex justify-between py-1 text-circuit-accent">
+                                        <dt>
+                                            Discount
+                                            <code class="bg-circuit-raised border border-circuit-border px-1.5 rounded text-[0.85em] ml-1 text-circuit-accent" x-text="state.view.cart.cartSummary.discount.code" data-test="discount-code"></code>
+                                        </dt>
+                                        <dd x-text="'-$' + state.view.cart.cartSummary.discount.amount.toFixed(2)" data-test="discount-amount"></dd>
+                                    </div>
+                                </template>
+                                <div class="flex justify-between border-t border-circuit-border mt-1.5 pt-2.5 font-bold text-circuit-ink text-base" data-test="summary-total">
+                                    <dt>Total</dt>
+                                    <dd x-text="'$' + state.view.cart.cartSummary.total.toFixed(2)"></dd>
+                                </div>
+                            </dl>
+                            <div class="mt-5 pt-3 border-t border-dashed border-circuit-border text-xs">
+                                <template x-if="state.view.cart.cartSummary.freeShipping.qualifies">
+                                    <div class="flex items-center gap-1.5 text-circuit-accent font-bold" data-test="shipping-unlocked" role="status">
+                                        <span class="icon icon-check-circle w-4 h-4" aria-hidden="true"></span>
+                                        Free shipping unlocked!
+                                    </div>
+                                </template>
+                                <template x-if="!state.view.cart.cartSummary.freeShipping.qualifies">
+                                    <div data-test="shipping-progress" role="status">
+                                        <div class="text-circuit-ink2 mb-1.5">
+                                            Add
+                                            <strong class="text-circuit-accent" x-text="'$' + state.view.cart.cartSummary.freeShipping.remaining.toFixed(2)"></strong>
+                                            more for free shipping
+                                        </div>
+                                        <div class="h-1.5 bg-circuit-raised border border-circuit-border rounded-full overflow-hidden" role="none" aria-hidden="true">
+                                            <div class="h-full bg-gradient-to-r from-circuit-accent-dim to-circuit-accent transition-[width] duration-300"
+                                                :style="'width: ' + state.view.cart.cartSummary.freeShipping.progress + '%'"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Checkout -->
+                    <template x-if="state.view.cart.checkout">
+                        <div class="mt-7 flex justify-end" data-test="checkout" role="none">
+                            <button class="cta-btn cta-btn-lg"
+                                :aria-label="state.view.cart.checkout.title"
+                                @click="updateStateFrom(state.view.cart.checkout.href)">
+                                <span aria-hidden="true"><span class="icon icon-cart-fill w-5 h-5"></span>
+                                <span x-text="state.view.cart.checkout.title"></span></span>
+                            </button>
+                            <template x-if="state.view.cart.loyaltyEarn">
+                                <output class="inline-flex items-center gap-1.5 ml-5 font-mono text-sm text-circuit-accent" data-test="loyalty-earn">
+                                    <span class="icon icon-star w-4 h-4" aria-hidden="true"></span>
+                                    Earn <strong x-text="state.view.cart.loyaltyEarn"></strong> points
+                                </output>
+                            </template>
+                        </div>
+                    </template>
+                </section>
+            </template>
+
+        </div>
+
+        <!-- Backend attribution footer -->
+        <template x-if="state.meta?.dataSources?.length">
+            <footer class="flex flex-wrap items-center gap-3 py-5 mt-7 border-t border-dashed border-circuit-border font-mono text-xs text-circuit-muted" aria-label="Data sources" data-test="sources">
+                <span class="uppercase tracking-widest">Assembled from</span>
+                <ul class="flex flex-wrap items-center gap-3 list-none m-0 p-0">
+                    <template x-for="src in state.meta.dataSources" :key="src.id">
+                        <li class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-circuit-surface border border-circuit-border rounded-full text-circuit-ink2" data-test="source-chip">
+                            <strong class="text-circuit-accent tracking-wide" x-text="src.name"></strong>
+                            <span class="text-circuit-muted" x-text="src.role"></span>
+                        </li>
+                    </template>
+                </ul>
+            </footer>
+        </template>
+    </main>
+</body>
+
+</html>

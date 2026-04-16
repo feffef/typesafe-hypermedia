@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        id: typecheck
+        run: npm run typecheck
+
+      - name: Build
+        id: build
+        run: npm run build
+
+      - name: Tests
+        id: tests
+        run: npx jest
+
+      - name: Coverage
+        id: coverage
+        run: npx jest --coverage
+
+      - name: Report check results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.payload.pull_request?.head?.sha ?? context.sha;
+            const steps = [
+              { name: '1. Typecheck', outcome: '${{ steps.typecheck.outcome }}' },
+              { name: '2. Build', outcome: '${{ steps.build.outcome }}' },
+              { name: '3. Tests', outcome: '${{ steps.tests.outcome }}' },
+              { name: '4. Coverage', outcome: '${{ steps.coverage.outcome }}' },
+            ];
+            for (const { name, outcome } of steps) {
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name,
+                head_sha: sha,
+                status: 'completed',
+                conclusion: outcome === 'success' ? 'success'
+                  : outcome === 'failure' ? 'failure'
+                  : 'skipped',
+              });
+            }
+
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Playwright tests
+        run: npm run test:playwright
