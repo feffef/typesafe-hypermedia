@@ -82,7 +82,7 @@ if (error) {
     case 'outOfStock':
       console.log(error.resource.message);
       // Follow-up links on errors can be navigated as well (with full type safety)
-      let restocked = await navigate(error.resource.restock);
+      const restocked = await navigate(error.resource.restock);
       console.log(`Notify user that ${restocked.name} needs to be restocked`);
       return;
     // Default branch handles unexpected errors (network, error status, parse errors)

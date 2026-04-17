@@ -18,7 +18,7 @@ Debugging "Link metadata not found" errors currently requires developers to ment
 
 ### Approach
 
-Export a `debugNavigable(obj)` function that queries the global `navigableOwner` map and the owning client's `MetadataStore`, returning a structured snapshot:
+Export a `debugNavigable(obj)` function that queries the `apiClientByNavigable` and `linksByNavigable` WeakMaps in `src/runtime-metadata.ts`, returning a structured snapshot:
 
 ```typescript
 debugNavigable(shop)
