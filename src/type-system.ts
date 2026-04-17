@@ -105,6 +105,18 @@ export interface Navigable<L extends Record<string, LinkSpec>> {
 }
 
 /**
+ * Controls how much detail the library includes in error messages.
+ *
+ * - `'verbose'` (default): includes full URL, resource names, schema paths — best for client-side debugging.
+ * - `'safe'`: omits URLs and internal identifiers — use in BFF/API gateway contexts.
+ *
+ * Single source of truth for the verbosity union — every internal helper that
+ * branches on verbosity (`api-client`, `error-handling`, `uri-templates`)
+ * imports this alias rather than restating the literal union.
+ */
+export type Verbosity = 'verbose' | 'safe';
+
+/**
  * Configuration options for connecting to a hypermedia API.
  *
  * Passed to `linkTo()` to initialize the client and create the root entry point.
@@ -121,18 +133,6 @@ export interface Navigable<L extends Record<string, LinkSpec>> {
  * });
  * ```
  */
-/**
- * Controls how much detail the library includes in error messages.
- *
- * - `'verbose'` (default): includes full URL, resource names, schema paths — best for client-side debugging.
- * - `'safe'`: omits URLs and internal identifiers — use in BFF/API gateway contexts.
- *
- * Single source of truth for the verbosity union — every internal helper that
- * branches on verbosity (`api-client`, `error-handling`, `uri-templates`)
- * imports this alias rather than restating the literal union.
- */
-export type Verbosity = 'verbose' | 'safe';
-
 export interface ConnectOptions<
     ApiDef extends ApiDefinition,
     RootResource extends ResourceNameFrom<ApiDef> = ResourceNameFrom<ApiDef>
@@ -314,8 +314,7 @@ type Merge<S, O> = MergeInner<S, NonNullable<O>>;
  *   Non-Navigable overlays (intermediate path segments) add `& unknown`
  *   which TypeScript simplifies away.
  * - Primitives: Simple intersection S & O
- */
-/**
+ *
  * @internal Exported solely for type-level test access in `test/unit/type-system.test.ts`.
  * Not intended for public consumption — consume `Resource<N, A>` instead.
  */
