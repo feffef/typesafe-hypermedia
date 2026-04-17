@@ -26,21 +26,7 @@ Switching from plain JSON schema to `Type.Object({ error: Type.String() })` adde
 
 ## 3. Consolidate error message formats across error paths — DONE
 
-**Status**: Completed. The `api-client.ts` / `error-handling.ts` refactor split the
-fetch pipeline into `fetchSafe` and `fetchProne` and routed every message through
-the file-private `formatErrorMessage` table so both paths share one canonical
-format per (verbosity × category). Failure construction lives in two free
-functions (`networkFailure`, `responseFailure`) that `fetchProne` calls inline.
-Verbose-mode HTTP failure messages always carry the failing URL; safe mode
-strips it.
-
----
-
-## 5. Split `navigate.spec.ts` into multiple files — DONE
-
-**Status**: Completed. `test/integration/navigate.spec.ts` was split into 10
-focused spec files following `docs/integration-test-split.md`. Shared fixtures
-live in `test/test-schemas.ts`.
+**Status**: Completed. The `api-client.ts` / `error-handling.ts` refactor consolidated the fetch pipeline into a single `ApiClient.fetchResource` method that returns a `{ resource | failure, baseURL }` discriminated result. Each `Failure` variant is produced by its own builder in `error-handling.ts` (`uriExpansionFailure`, `networkFailure`, `unmappedStatusFailure`, `invalidJsonFailure`, `invalidStructureFailure`, `responseFailure`), with verbosity-aware message formatting inlined per builder. The `Failure → Error` conversion used by safe-link callers is centralised in `failureToError`.
 
 ---
 
@@ -53,6 +39,13 @@ live in `test/test-schemas.ts`.
 `expandUriTemplate`. All tests, examples, and documentation were updated to
 drop the wrapper. The public `expandUriTemplate` API still takes a `TObject`
 schema directly.
+
+---
+
+## 5. Split `navigate.spec.ts` into multiple files — DONE
+
+**Status**: Completed. `test/integration/navigate.spec.ts` was split into 10
+focused spec files. Shared fixtures live in `test/test-schemas.ts`.
 
 ---
 
@@ -71,17 +64,16 @@ protected at the WeakMap boundary.
 
 ## 7. Petshop-fixture prone-link smoke test (post-split note)
 
-**Source**: `docs/integration-test-split.md` consolidation review
 **Location**: `test/integration/error-handling.spec.ts` (`prone links (expected errors)` describe)
 **Status**: Resolved during the integration test split.
 
-The plan flagged the petshop-fixture rows 1177/1195 as consolidation candidates
-(redundant with the synthetic `errorApi` rows 1084/1115). The split kept **one**
-of them — the success case — as a single "real-API-shape" smoke test against
-the example `petshopApi`. The 404 duplicate (old line 1195) was dropped
-outright. Rationale: the synthetic API already proves the prone-link contract
-in detail, and the smoke test is enough to guard against drift between the
-example API definition and the prone-link runtime path.
+Petshop-fixture rows 1177/1195 are consolidation candidates (redundant with
+the synthetic `errorApi` rows 1084/1115). The split kept **one** of them — the
+success case — as a single "real-API-shape" smoke test against the example
+`petshopApi`. The 404 duplicate (old line 1195) was dropped outright. Rationale:
+the synthetic API already proves the prone-link contract in detail, and the smoke
+test is enough to guard against drift between the example API definition and the
+prone-link runtime path.
 
 ---
 
@@ -104,6 +96,18 @@ The fix therefore benefits hand-typed `readonly T[]` carriers today (such as
 types declared with `as const` or explicit `readonly` annotations), and will
 automatically cover TypeBox-generated arrays if/when TypeBox changes this
 behaviour.
+
+---
+
+## 9. `Merge` type uses broad `S extends object` check — RESOLVED
+
+**Source**: Critical review (Type System concern #3)
+**Location**: `src/type-system.ts` (`MergeInner`)
+**Resolution**: `MergeInner` object branch was tightened from `S extends object`
+to `S extends Record<string, unknown>`. This prevents Date, Function, RegExp,
+and other non-plain-object types from being recursively merged. A type-level
+regression test in `test/unit/type-system.test.ts` verifies that a Date field
+passes through `MergeInner` without losing its instance methods.
 
 ---
 
@@ -189,6 +193,26 @@ lowest-risk cleanup if the cast is kept at one central helper.
 
 ---
 
+## 12. Expand `ProblemSchema` to fully represent RFC 7807
+
+**Source**: Code review quick-fixes (inline TODO removed)
+**Location**: `examples/petshop-api.ts` (`ProblemSchema`)
+**Effort**: ~5 min
+
+Expand `ProblemSchema` to fully represent RFC 7807 (title, type, status, detail, instance) — currently minimal stub. The schema only defines `title: Type.String()` today. All RFC 7807 fields should be added (with optional where appropriate) so the example accurately models a real problem detail response.
+
+```typescript
+export const ProblemSchema = Type.Object({
+    title: Type.String(),
+    type: Type.Optional(Type.String()),
+    status: Type.Optional(Type.Number()),
+    detail: Type.Optional(Type.String()),
+    instance: Type.Optional(Type.String()),
+});
+```
+
+---
+
 ## 13. CI does not run `tsconfig.typecheck.json` (covers `test/`, `examples/`)
 
 **Source**: PR #80 round-3 peer review observation
@@ -214,18 +238,6 @@ The file is missing a trailing newline. Apply when next touched.
 
 ---
 
-## 9. `Merge` type uses broad `S extends object` check — RESOLVED
-
-**Source**: Critical review (Type System concern #3)
-**Location**: `src/type-system.ts` (`MergeInner`)
-**Resolution**: `MergeInner` object branch was tightened from `S extends object`
-to `S extends Record<string, unknown>`. This prevents Date, Function, RegExp,
-and other non-plain-object types from being recursively merged. A type-level
-regression test in `test/unit/type-system.test.ts` verifies that a Date field
-passes through `MergeInner` without losing its instance methods.
-
----
-
 ## 15. `tsc --noEmit` silently skips `examples/` and `test/`
 
 **Source**: `feat/bff-showcase` session friction log F-5
@@ -233,23 +245,3 @@ passes through `MergeInner` without losing its instance methods.
 **Effort**: ~5 min
 
 The default `tsconfig.json` excludes `examples/` and `test/`, so `npx tsc --noEmit` passes even when those trees have real type errors. The correct invocation is `npx tsc --noEmit -p tsconfig.typecheck.json`. Add a one-liner to AGENTS.md under "Running checks" so contributors don't have to discover this the hard way.
-
----
-
-## 12. Expand `ProblemSchema` to fully represent RFC 7807
-
-**Source**: Code review quick-fixes (inline TODO removed)
-**Location**: `examples/petshop-api.ts` (`ProblemSchema`)
-**Effort**: ~5 min
-
-Expand `ProblemSchema` to fully represent RFC 7807 (title, type, status, detail, instance) — currently minimal stub. The schema only defines `title: Type.String()` today. All RFC 7807 fields should be added (with optional where appropriate) so the example accurately models a real problem detail response.
-
-```typescript
-export const ProblemSchema = Type.Object({
-    title: Type.String(),
-    type: Type.Optional(Type.String()),
-    status: Type.Optional(Type.Number()),
-    detail: Type.Optional(Type.String()),
-    instance: Type.Optional(Type.String()),
-});
-```
