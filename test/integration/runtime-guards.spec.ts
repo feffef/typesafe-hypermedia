@@ -18,7 +18,7 @@
  */
 
 import { Type } from '@sinclair/typebox';
-import { defineLinks, linkTo } from '../../src';
+import { defineLinks, linkTo, NavigationError } from '../../src';
 import { navigate } from '../../src/navigate';
 import { petshopApi, PetshopSchema, PetSchema } from '../../examples/petshop-api';
 import { mockResponse } from '../mock-responses';
@@ -357,6 +357,58 @@ describe('navigate — runtime guards', () => {
             // @ts-expect-error — Intentionally bypassing type system
             await expect(navigate(input))
                 .rejects.toThrow(/Link metadata not found/);
+        });
+    });
+
+    describe('NavigationError class contract', () => {
+        // These tests pin the subclass contract: `NavigationError extends
+        // Error`, so broad-catch code relying on `instanceof Error` still
+        // works, while specific catch code can use `instanceof
+        // NavigationError` for a precise catch path.
+
+        const namedLinkApi = defineLinks(['dashboard', 'catalog', 'product'], {
+            dashboard: {
+                schema: DashboardSchema,
+                links: {
+                    catalogUrl: { to: 'catalog' },
+                    productUrl: { to: 'product', params: { id: Type.String() } },
+                },
+            },
+            catalog: { schema: SimpleCatalogSchema, links: {} },
+            product: { schema: SimpleProductSchema, links: {} },
+        });
+
+        const dashboardBody = {
+            welcomeMessage: 'Hello',
+            catalogUrl: '/catalog',
+            productUrl: '/products/{id}',
+        };
+
+        it('throws NavigationError (and instanceof Error) when navigating with an unknown link name', async () => {
+            mockResponse(DashboardSchema, dashboardBody);
+            const dashboard = await navigate(linkTo({
+                api: namedLinkApi,
+                resource: 'dashboard',
+                url: 'http://localhost:3000',
+            }));
+
+            // @ts-expect-error — 'bogus' is not a key of dashboard's link record
+            const thrown = await navigate(dashboard, { link: 'bogus' }).catch(e => e);
+
+            expect(thrown).toBeInstanceOf(NavigationError);
+            expect(thrown).toBeInstanceOf(Error); // broad-catch compat
+            expect(thrown.name).toBe('NavigationError');
+            expect((thrown as Error).message).toMatch(/Link "bogus" is not available on this resource/);
+        });
+
+        it('throws NavigationError (and instanceof Error) when passed a non-navigable object', async () => {
+            // @ts-expect-error — plain object bypasses the type system
+            const thrown = await navigate({ href: '/nope' }).catch(e => e);
+
+            expect(thrown).toBeInstanceOf(NavigationError);
+            expect(thrown).toBeInstanceOf(Error);
+            expect(thrown.name).toBe('NavigationError');
+            expect((thrown as Error).message).toMatch(/Link metadata not found/);
         });
     });
 

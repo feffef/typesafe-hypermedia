@@ -21,6 +21,10 @@ export type {
 } from './error-handling';
 
 export {
+    NavigationError,
+} from './error-handling';
+
+export {
     linkTo,
     navigate,
     navigateAll,
@@ -32,7 +36,6 @@ export type {
     LinkSpec,
     ConnectOptions,
     RootNavigable,
-    LinkedResource,
     Simplify,
     Verbosity,
 } from './type-system';

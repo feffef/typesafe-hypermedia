@@ -1,6 +1,6 @@
 import { ApiDefinition } from './link-definition';
 import { Navigable, LinkSpec, LinkedResource, ConnectOptions, RootNavigable, ResourceNameFrom } from './type-system';
-import { ResourceOrFailure } from './error-handling';
+import { NavigationError, ResourceOrFailure } from './error-handling';
 import { ApiClient } from './api-client';
 import { getOwningClient } from './runtime-metadata';
 import { Static, TObject } from '@sinclair/typebox';
@@ -197,7 +197,7 @@ export async function navigate(
 ): Promise<any> {
     const client = getOwningClient(navigable);
     if (!client) {
-        throw new Error('Link metadata not found. Object was not created by typesafe-hypermedia.');
+        throw new NavigationError('Link metadata not found. Object was not created by typesafe-hypermedia.');
     }
 
     return client.resolve(navigable, options?.link, options?.params);
