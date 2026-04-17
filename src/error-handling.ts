@@ -3,6 +3,30 @@ import { Value } from '@sinclair/typebox/value';
 import { Resource, LinkSpec, LinkedResource, Verbosity } from './type-system';
 
 // ============================================================================
+// NavigationError — thrown for unknown-link / missing-metadata programming errors
+// ============================================================================
+
+/**
+ * Thrown by `navigate` / `linkTo` when a requested link name is not
+ * available on the navigable (or when the navigable has no attached
+ * metadata). This is a programming error — the calling code asked for
+ * a link that the server never advertised — so it always throws
+ * verbosely regardless of `ConnectOptions.errorVerbosity`.
+ *
+ * Extends `Error` so `instanceof Error` still works for broad-catch
+ * callers, while `instanceof NavigationError` gives a precise catch
+ * path for calling code that wants to handle this specifically.
+ *
+ * @public
+ */
+export class NavigationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'NavigationError';
+    }
+}
+
+// ============================================================================
 // Failure — the one public discriminated-union type for prone-link failures
 // ============================================================================
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Export `NavigationError` class thrown by `navigate` / `linkTo` when a requested link name is not available on a navigable.
+
+### Changed
+
+- `navigate` and `linkTo` now throw `NavigationError` (extends `Error`) for unknown-link errors instead of plain `Error`. `instanceof Error` continues to work; `instanceof NavigationError` gives callers a precise catch path.
+
+### Removed
+
+- **BREAKING**: removed `LinkedResource` type export — it was an internal alias with no observed external callers. Migration: inline `Resource<L['Target'], L['Api']>`.
+
 ## [0.1.0] - 2026-04-16
 
 ### Added

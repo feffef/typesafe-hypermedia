@@ -251,7 +251,7 @@ const user = await navigate(root, { link: 'currentUser' });
 const product = await navigate(shop, { link: 'getProduct', params: { id: '123' } });
 ```
 
-If a non-existent link name is provided, `navigate` throws a `TypeError` listing the requested name and available links. This error is always verbose regardless of `errorVerbosity` — link names are compile-time constants from the API definition, not sensitive runtime data.
+If a non-existent link name is provided, `navigate` throws a `NavigationError` listing the requested name and available links. `NavigationError` extends `Error`, so `instanceof Error` continues to work for broad-catch code; `instanceof NavigationError` gives callers a precise catch path for this specific programming error. This error is always verbose regardless of `errorVerbosity` — link names are compile-time constants from the API definition, not sensitive runtime data.
 
 ### 6.4 `navigateAll(links)`
 Convenience helper that resolves an array of single-link navigables in parallel.

@@ -1,5 +1,6 @@
 import type { ApiClient } from './api-client';
 import { LinkDefinition, ResourceDefinition } from './link-definition';
+import { NavigationError } from './error-handling';
 
 // ============================================================================
 // Module-level state
@@ -171,7 +172,7 @@ export function recallLink(navigable: object, name?: string): KnownLink {
         const link = links.get(name);
         if (!link) {
             const available = Array.from(links.keys());
-            throw new Error(
+            throw new NavigationError(
                 `Link "${name}" is not available on this resource ` +
                 `(available: ${available.join(', ')}). ` +
                 `If this is an optional link, check that the property exists before navigating.`
@@ -186,7 +187,7 @@ export function recallLink(navigable: object, name?: string): KnownLink {
 
     // size === 0: resource defines links but the server didn't include any.
     if (links.size === 0) {
-        throw new Error(
+        throw new NavigationError(
             'No links are available on this resource. ' +
             'If this resource defines optional links, the server did not include any of them.'
         );

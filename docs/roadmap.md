@@ -247,9 +247,9 @@ This should be batched with any other public type renames to minimise the number
 
 ### Problem
 
-Errors thrown by the library are plain `Error` and `TypeError` instances with descriptive messages but no class-based discrimination. Consumers cannot use `instanceof` to distinguish a navigation error (e.g. unknown link name) from a validation error (response failed schema check) from a configuration error (bad `defineLinks` input). Catch blocks must inspect message strings, which is brittle.
+Most errors thrown by the library are plain `Error` instances with descriptive messages but no class-based discrimination. Consumers cannot use `instanceof` to distinguish a navigation error (e.g. unknown link name) from a validation error (response failed schema check) from a configuration error (bad `defineLinks` input). Catch blocks must inspect message strings, which is brittle.
 
-The `errorVerbosity` system standardizes the *messages* across error paths, and `error-handling.ts` centralizes prone-link error *responses*, but there's no class hierarchy for *thrown* errors.
+The `errorVerbosity` system standardizes the *messages* across error paths, and `error-handling.ts` centralizes prone-link error *responses*, but the full class hierarchy for *thrown* errors is still incomplete.
 
 ### Why It Matters
 
@@ -259,18 +259,16 @@ For library consumers writing higher-level wrappers (BFFs, SDK layers, retry log
 
 Introduce a small hierarchy in `src/error-handling.ts`:
 
-- `HypermediaError` — base class extending `Error`
-- `NavigationError` — bad link name, navigable without metadata, missing client
-- `ValidationError` — schema check failed on response or params
-- `ConfigurationError` — `defineLinks` validation failures, bad URI templates
+- `HypermediaError` — base class extending `Error` *(still open)*
+- `NavigationError` — bad link name, navigable without metadata, missing client **— DONE:** landed in `src/error-handling.ts`; thrown by `navigate` / `linkTo` via `runtime-metadata.ts` and `navigate.ts` for unknown-link and missing-metadata cases. Exported from `src/index.ts`.
+- `ValidationError` — schema check failed on response or params *(still open)*
+- `ConfigurationError` — `defineLinks` validation failures, bad URI templates *(still open)*
 
-Update all `throw` sites in `api-client.ts`, `navigate.ts`, `link-definition.ts`, `uri-templates.ts`, and `link-extraction.ts` to throw the appropriate subclass. Preserve the existing message strings (and their `verbose`/`safe` variants) so this is purely additive at the message level.
-
-This is a breaking change for any consumer that catches `TypeError` specifically — the `navigate` "no link named X" path currently throws `TypeError`, and would become `NavigationError extends Error`. Document in the release notes.
+The remaining work is to update all `throw` sites in `api-client.ts`, `link-definition.ts`, `uri-templates.ts`, and `runtime-metadata.ts` (for invariant/validation throws, not the link-not-found ones already using `NavigationError`) to throw the appropriate subclass. Preserve the existing message strings (and their `verbose`/`safe` variants) so this is purely additive at the message level.
 
 ### Constraint
 
-Batch with other breaking changes (e.g. §7 `ConnectOptions` rename) to minimize the number of major releases.
+Batch remaining subclasses with other breaking changes (e.g. §7 `ConnectOptions` rename) to minimize the number of major releases.
 
 ---
 

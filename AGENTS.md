@@ -6,7 +6,7 @@ This file provides guidance for AI agents working with this repository.
 
 **CRITICAL MUST DO**: You **MUST** update `AGENTS.md`, `README.md`, and `docs/how-it-works.md` to be in sync with the code after every implementation, refactoring, or feature addition. It is NOT optional. Using the code as the source of truth does *not* mean you can leave the docs outdated.
 
-**Public API surface** (kept deliberately minimal): `linkTo`, `navigate`, `navigateAll`, `defineLinks`, `expandUriTemplate`, plus the supporting types (`ConnectOptions`, `Resource`, `Navigable`, `LinkSpec`, `FetchFactory`, `FetchContext`, `Failure`, `ResponseInfo`, `Simplify`, `Verbosity`, `ExpandUriTemplateConfig`). Everything else in `src/` is internal. The library is pre-release/experimental — breaking the public API is acceptable when it's the right call; just update docs and examples in the same change.
+**Public API surface** (kept deliberately minimal): `linkTo`, `navigate`, `navigateAll`, `defineLinks`, `expandUriTemplate`, plus the supporting types (`ApiDefinition`, `ConnectOptions`, `Resource`, `Navigable`, `RootNavigable`, `LinkSpec`, `FetchFactory`, `FetchContext`, `Failure`, `ResponseInfo`, `Simplify`, `Verbosity`, `ExpandUriTemplateConfig`) and the `NavigationError` class (thrown for unknown-link / missing-metadata programming errors). Everything else in `src/` is internal. The library is pre-release/experimental — breaking the public API is acceptable when it's the right call; just update docs and examples in the same change.
 
 ## Project Structure & Active Files
 
@@ -14,7 +14,7 @@ The library implements a Type-Safe Hypermedia Client (`typesafe-hypermedia`).
 
 ### Core Library
 
-*   **`src/type-system.ts`**: **TYPE SYSTEM CORE**. Defines the phantom type system (`Navigable`, `LinkSpec`, `Resource`), public API types (`ConnectOptions`, `RootNavigable`, `LinkedResource`), and helper types.
+*   **`src/type-system.ts`**: **TYPE SYSTEM CORE**. Defines the phantom type system (`Navigable`, `LinkSpec`, `Resource`), public API types (`ConnectOptions`, `RootNavigable`), internal helpers (`LinkedResource`), and other supporting types.
 *   **`src/navigate.ts`**: **PUBLIC API**. Exports `linkTo`, `navigate`, and `navigateAll`. `navigate` supports both single-link auto-resolve mode (when the navigable has exactly one link) and named-link mode (`{ link: 'name' }`).
 *   **`src/api-client.ts`**: **CLIENT RUNTIME**. Implements `ApiClient`, responsible for creating entry points, resolving links, and executing fetches. One unified fetch pipeline (`fetchResource`) feeds both safe and prone links: it returns a `{ resource, failure, baseURL }` result covering URI expansion, transport, HTTP status, parse, and validation failures. `resolve` dispatches at the boundary — prone links get a `[resource, failure]` tuple, safe links throw `failureToError(failure, verbosity)` from `error-handling.ts`. Delegates all runtime metadata bookkeeping to `runtime-metadata.ts`.
 *   **`src/runtime-metadata.ts`**: **RUNTIME METADATA**. Three module-level `WeakMap`s — `apiClientByNavigable` (navigable → `ApiClient`), `linksByNavigable` (navigable → known links), and `accessorCache` (link-defs → compiled traversal functions). Free functions `rememberLinks`, `rememberEntryPoint`, `recallLink`, and `getOwningClient` operate on them. `KnownLink` is the per-link record. This is the runtime counterpart to `type-system.ts` (compile-time phantom metadata via symbols).
