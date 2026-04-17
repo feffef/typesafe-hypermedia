@@ -41,7 +41,7 @@ Everything runs in one Fastify process for ease of running. The logical separati
 ## 1b. Link conventions by backend
 
 Each backend uses a different link representation to demonstrate that `typesafe-hypermedia`
-is format-agnostic (see AGENTS.md Core Concept #5 and `docs/how-it-works.md §9`):
+is format-agnostic (see AGENTS.md Core Concept #5 and `docs/how-it-works.md §8`):
 
 | Backend | Link pattern | Example | Why |
 |---------|-------------|---------|-----|
@@ -121,14 +121,14 @@ The client's job is to render whichever `view.*` sub-object is populated. Becaus
 
 | View                 | Triggered by                              | Composes from |
 |----------------------|-------------------------------------------|---------------|
-| **Home**             | `view=home` (or no `view`)               | PIM (featured by tag) + ERP (quotes) |
-| **Category**         | `view=category&category=<id>`            | PIM + ERP |
-| **Product detail**   | `view=product&sku=<sku>`                 | PIM (product, reviews, related) + ERP (quote, stock) + DAM (images, optional) |
-| **Cart**             | `view=cart`                              | PIM (names) + ERP (quotes) + CRM (offers for promo) — plus recommendations via PIM `relatedProductsUrl` |
-| **Wishlist**         | `view=wishlist`                          | PIM + ERP |
-| **Search results**   | `view=search&search=<q>`                 | PIM + ERP (when results) |
-| **Orders list**      | `view=orders`                            | ERP |
-| **Order confirmation** | `view=order-confirmation&orderId=<id>` | ERP (falls back to orders list + danger toast if id not found) |
+| **Home**             | `GET /bff/home`                          | PIM (featured by tag) + ERP (quotes) |
+| **Category**         | `GET /bff/category?category=<id>`        | PIM + ERP |
+| **Product detail**   | `GET /bff/product?sku=<sku>`             | PIM (product, reviews, related) + ERP (quote, stock) + DAM (images, optional) |
+| **Cart**             | `GET /bff/cart`                          | PIM (names) + ERP (quotes) + CRM (offers for promo) — plus recommendations via PIM `relatedProductsUrl` |
+| **Wishlist**         | `GET /bff/wishlist`                      | PIM + ERP |
+| **Search results**   | `GET /bff/search?search=<q>`             | PIM + ERP (when results) |
+| **Orders list**      | `GET /bff/orders`                        | ERP |
+| **Order confirmation** | `GET /bff/order-confirmation?orderId=<id>` | ERP (falls back to orders list + danger toast if id not found) |
 
 Every view builder threads a `used: Set<SourceId>` and calls `used.add('pim'|'erp'|'crm'|'dam')` as it fetches. `buildDataSources(used)` turns the set into the `dataSources` field at the end. This gives the UI an automatic, honest attribution bar at the bottom of every page.
 

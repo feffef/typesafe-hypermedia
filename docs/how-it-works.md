@@ -335,7 +335,7 @@ A key insight: error resources are not special. They are regular resources that 
 
 This design keeps the API definition simple and consistent.
 
-## 9. Design Decisions (The "Why")
+## 8. Design Decisions (The "Why")
 
 ### Why Support Both Link Objects and String Properties?
 
@@ -377,7 +377,7 @@ The library doesn't pick winners - it provides the tools and lets developers cho
 
 ### Why Simple Initialization?
 *   **Ease of Use**: `linkTo()` provides a simple starting point - validates config and returns the root link.
-*   **Type Safety**: Explicit `apiRoot` parameter ensures correct return type.
+*   **Type Safety**: Explicit `resource` parameter ensures correct return type.
 *   **Separation of Concerns**: Initialization separated from navigation (use `navigate()` to navigate).
 *   **Trade-off**: Resources must stay in memory for navigation (metadata stored in module-level `WeakMap`s keyed by object identity).
 
@@ -389,7 +389,7 @@ The library doesn't pick winners - it provides the tools and lets developers cho
 *   **Type Safety**: TypeScript enforces handling through the tuple pattern. You cannot accidentally ignore errors once `expect` is declared.
 *   **Trade-off**: More verbose than try/catch, but explicit and type-safe. Forces thinking about error cases upfront.
 
-## 10. Known Gaps & Roadmap
+## 9. Known Gaps & Roadmap
 
 **Phase 1: Core Completeness**
 
@@ -397,8 +397,8 @@ The library doesn't pick winners - it provides the tools and lets developers cho
 
 **Phase 2: Robustness**
 *   ✅ **Performance (RESOLVED)**: Link extraction uses compiled path accessors cached per ResourceDefinition. First fetch compiles optimized traversal functions, subsequent fetches reuse them. No repeated traversals for similar paths (e.g., `items[].author` and `items[].category` share traversal). Performance optimized for production use.
-*   **Reattachment after serialization**: Need a utility to reattach runtime metadata to objects that have been serialized/deserialized (Note: This is generally an anti-pattern in HATEOAS - see Section 7.3 for best practices).
+*   **Reattachment after serialization**: Need a utility to reattach runtime metadata to objects that have been serialized/deserialized (Note: Caching hrefs like this is an anti-pattern in HATEOAS — you lose the server's ability to evolve URLs. Prefer re-fetching from the root navigable when the link might have changed.).
 
-## 11. Lessons Learned
+## 10. Lessons Learned
 
 *   *Placeholder: Document failed refactoring attempts here to avoid repeating mistakes.*
