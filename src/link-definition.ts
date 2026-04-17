@@ -126,22 +126,36 @@ export type ApiDefinition<ValidNames extends string = string> = Record<string, R
  *
  * @example
  * ```typescript
- * // Define API with validated resource references
- * const api = defineLinks(['users', 'posts'], {
+ * import { Type } from '@sinclair/typebox';
+ * import { defineLinks } from 'typesafe-hypermedia';
+ *
+ * const PostSchema = Type.Object({
+ *   id: Type.String(),
+ *   title: Type.String(),
+ * });
+ *
+ * const UserSchema = Type.Object({
+ *   id: Type.String(),
+ *   name: Type.String(),
+ *   // `posts` is an array of link objects, each with an `href` URL
+ *   posts: Type.Array(Type.Object({ href: Type.String() })),
+ * });
+ *
+ * export const api = defineLinks(['users', 'posts'], {
  *   users: {
  *     schema: UserSchema,
  *     links: {
- *       'posts[]': { to: 'posts' }  // ✓ Autocomplete for 'posts' works! Validated!
- *     }
+ *       // Resolve each post's href → posts resource. Validated at compile
+ *       // and runtime: the path `posts[].href` must exist on UserSchema.
+ *       'posts[].href': { to: 'posts' },
+ *     },
  *   },
  *   posts: {
  *     schema: PostSchema,
  *     links: {
- *       'author': { to: 'users' }    // ✓ Validated!
- *       // 'author': { to: 'userz' } // ✗ TypeScript error - 'userz' not in ['users', 'posts']
- *       // 'othor': { to: 'users' }  // ✗ fails during runtime validation
- *     }
- *   }
+ *       // 'author': { to: 'userz' } // ✗ TypeScript error — 'userz' not in ['users', 'posts']
+ *     },
+ *   },
  * });
  * ```
  */
