@@ -343,11 +343,11 @@
 
         <!-- Header — brand + primary nav + utility rail -->
         <header class="bg-eg-surface border-b border-eg-line">
-            <div class="eg-container py-[22px] flex items-center gap-10 flex-wrap">
-                <p class="eg-brand m-0">hypermedia<span class="dot">.</span>store</p>
+            <div class="eg-container py-[22px] flex items-center gap-6">
+                <p class="eg-brand m-0 shrink-0">hypermedia<span class="dot">.</span>store</p>
 
                 <!-- Categories + Home nav -->
-                <nav class="flex gap-7 items-center" aria-label="Main navigation" data-test="nav">
+                <nav class="flex gap-6 items-center shrink-0" aria-label="Main navigation" data-test="nav">
                     <template x-if="state.nav?.home">
                         <button class="eg-navlink"
                             :aria-current="state.nav.home.selected ? 'page' : false"
@@ -373,8 +373,8 @@
 
                 <div class="flex-1"></div>
 
-                <!-- Utility: search + wishlist + cart + orders + greeting -->
-                <div class="flex items-center gap-5 flex-wrap">
+                <!-- Utility: search + wishlist + cart + greeting -->
+                <div class="flex items-center gap-4 shrink-0">
                     <search data-test="search">
                         <label class="relative flex items-center">
                             <span class="icon icon-search absolute left-2.5 w-4 h-4 text-eg-muted pointer-events-none" aria-hidden="true"></span>
