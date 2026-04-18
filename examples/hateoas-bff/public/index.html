@@ -216,6 +216,9 @@
 
         /* Product card — editorial, imagery-led */
         .eg-card { position: relative; background: transparent; animation: revealCard 0.25s ease-out backwards; }
+        .eg-card-clickable { cursor: pointer; }
+        .eg-card-clickable:hover .eg-card-media { border-color: var(--color-eg-ink); }
+        .eg-card-clickable:hover .eg-card-title { color: var(--color-eg-accent-ink); }
         .eg-card-media {
             position: relative;
             aspect-ratio: 4 / 5;
@@ -622,7 +625,9 @@
                             <h2 class="font-display text-[32px] font-semibold tracking-[-0.8px] text-eg-ink m-0 mb-7" x-text="state.view.detail.recommendations.heading"></h2>
                             <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-7 list-none m-0 p-0 animate-[revealUp_0.3s_ease-out_backwards]">
                                     <template x-for="(card, index) in state.view.detail.recommendations.cards || []" :key="index + '-' + card.title">
-                                        <li class="eg-card" data-test="card">
+                                        <li class="eg-card" data-test="card"
+                                            :class="card.href ? 'eg-card-clickable' : ''"
+                                            @click="card.href && updateStateFrom(card.href)">
                                             <div class="eg-card-media">
                                                 <div class="icon-placeholder" aria-hidden="true"><span class="icon icon-image w-8 h-8"></span></div>
                                                 <template x-if="card.badge">
@@ -632,7 +637,7 @@
                                                     <button class="eg-wishlist-btn" data-test="wishlist-toggle"
                                                         :class="card.actions.wishlistToggle.inWishlist ? 'is-active' : ''"
                                                         :aria-label="card.actions.wishlistToggle.inWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
-                                                        @click="updateStateFrom(card.actions.wishlistToggle.href)">
+                                                        @click.stop="updateStateFrom(card.actions.wishlistToggle.href)">
                                                         <template x-if="card.actions.wishlistToggle.inWishlist">
                                                             <span class="icon icon-heart-fill w-4 h-4" aria-hidden="true"></span>
                                                         </template>
@@ -649,7 +654,7 @@
                                                 </div>
                                                 <p class="text-xs leading-[1.55] text-eg-muted m-0 mt-1.5" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
                                                 <template x-if="card.href">
-                                                    <button class="eg-link mt-2" @click="updateStateFrom(card.href)">View Details</button>
+                                                    <button class="eg-link mt-2" @click.stop="updateStateFrom(card.href)">View Details</button>
                                                 </template>
                                             </div>
                                         </li>
@@ -703,7 +708,9 @@
                     <!-- Grid -->
                     <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-7 list-none m-0 p-0 animate-[revealUp_0.3s_ease-out_backwards]" x-show="state.view.listing.products.cards?.length > 0">
                         <template x-for="(card, index) in state.view.listing.products.cards || []" :key="index + '-' + card.title">
-                            <li class="eg-card" data-test="card">
+                            <li class="eg-card" data-test="card"
+                                :class="card.href ? 'eg-card-clickable' : ''"
+                                @click="card.href && updateStateFrom(card.href)">
                                 <div class="eg-card-media">
                                     <div class="icon-placeholder" aria-hidden="true"><span class="icon icon-image w-8 h-8"></span></div>
                                     <template x-if="card.badge">
@@ -713,7 +720,7 @@
                                         <button class="eg-wishlist-btn" data-test="wishlist-toggle"
                                             :class="card.actions.wishlistToggle.inWishlist ? 'is-active' : ''"
                                             :aria-label="card.actions.wishlistToggle.inWishlist ? 'Remove from wishlist' : 'Add to wishlist'"
-                                            @click="updateStateFrom(card.actions.wishlistToggle.href)">
+                                            @click.stop="updateStateFrom(card.actions.wishlistToggle.href)">
                                             <template x-if="card.actions.wishlistToggle.inWishlist">
                                                 <span class="icon icon-heart-fill w-4 h-4" aria-hidden="true"></span>
                                             </template>
@@ -739,12 +746,12 @@
                                     <p class="text-xs leading-[1.55] text-eg-muted m-0 mt-1.5" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
                                     <div class="flex gap-3 flex-wrap mt-3 items-center">
                                         <template x-if="card.href">
-                                            <button class="eg-link" @click="updateStateFrom(card.href)">View Details</button>
+                                            <button class="eg-link" @click.stop="updateStateFrom(card.href)">View Details</button>
                                         </template>
                                         <template x-if="card.actions?.addToCart">
                                             <button class="eg-link"
                                                 :aria-label="card.actions.addToCart.title"
-                                                @click="updateStateFrom(card.actions.addToCart.href)">
+                                                @click.stop="updateStateFrom(card.actions.addToCart.href)">
                                                 <span x-text="card.actions.addToCart.title"></span>
                                             </button>
                                         </template>
@@ -902,7 +909,9 @@
                             <h2 class="font-display text-[28px] font-semibold tracking-[-0.6px] text-eg-ink m-0 mb-6" x-text="state.view.cart.recommendations.heading"></h2>
                             <ul class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-7 list-none m-0 p-0">
                                 <template x-for="(card, index) in state.view.cart.recommendations.cards || []" :key="index + '-' + card.title">
-                                    <li class="eg-card" data-test="card">
+                                    <li class="eg-card" data-test="card"
+                                        :class="card.href ? 'eg-card-clickable' : ''"
+                                        @click="card.href && updateStateFrom(card.href)">
                                         <div class="eg-card-media">
                                             <div class="icon-placeholder" aria-hidden="true"><span class="icon icon-image w-8 h-8"></span></div>
                                             <template x-if="card.badge">
@@ -916,7 +925,7 @@
                                             </div>
                                             <p class="text-xs leading-[1.55] text-eg-muted m-0 mt-1.5" x-show="card.description" x-text="card.description" data-test="card-desc"></p>
                                             <template x-if="card.href">
-                                                <button class="eg-link mt-2" @click="updateStateFrom(card.href)">View Details</button>
+                                                <button class="eg-link mt-2" @click.stop="updateStateFrom(card.href)">View Details</button>
                                             </template>
                                         </div>
                                     </li>
